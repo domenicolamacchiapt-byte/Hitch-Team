@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/workout_provider.dart';
 import '../providers/auth_provider.dart';
 import 'program_detail_screen.dart';
+import 'profile_screen.dart';
 import 'history_screen.dart';
 import 'dictionary_screen.dart';
 import 'login_screen.dart';
@@ -45,6 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.power_settings_new, color: Colors.redAccent),
             onPressed: () => context.read<AuthProvider>().signOut(),
             tooltip: 'Logout',
+          ),
+          if (!isClientViewForAdmin) IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: Color(0xFFFF9800)),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            tooltip: 'Profilo',
           ),
           if (auth.isAdmin) IconButton(
             icon: const Icon(Icons.fitness_center, color: Color(0xFFFF9800)),
@@ -129,19 +135,41 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(icon: const Icon(Icons.power_settings_new, color: Colors.redAccent), onPressed: () => context.read<AuthProvider>().signOut()),
         ],
       ),
-      body: wp.clients.isEmpty ? const Center(child: Text('Nessun cliente registrato', style: TextStyle(color: Colors.white70))) : ListView.builder(
-        itemCount: wp.clients.length,
-        itemBuilder: (context, i) {
-          final client = wp.clients[i];
-          return ListTile(
-            leading: const CircleAvatar(backgroundColor: Color(0xFFFF9800), child: Icon(Icons.person, color: Colors.black)),
-            title: Text(client['email'] ?? 'Sconosciuto', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            subtitle: Text('Iscritto il ${client['created_at'].toString().split('T')[0]}', style: const TextStyle(color: Colors.white54)),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-            onTap: () => wp.loadPrograms(clientId: client['id']),
-          );
-        }
-      ),
+      body: wp.clients.isEmpty
+          ? const Center(child: Text('Nessun cliente registrato', style: TextStyle(color: Colors.white70)))
+          : ListView.builder(
+              itemCount: wp.clients.length,
+              itemBuilder: (context, i) {
+                final client = wp.clients[i];
+                final fn = client['first_name'] ?? '';
+                final ln = client['last_name'] ?? '';
+                final fullName = '${fn} ${ln}'.trim();
+                final displayName = fullName.isNotEmpty ? fullName : (client['email'] ?? 'Sconosciuto');
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFFFF9800),
+                    child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                  title: Text(displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Text(client['email'] ?? '', style: const TextStyle(color: Colors.white54)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.person_outline, color: Color(0xFFFF9800)),
+                        tooltip: 'Scheda Profilo',
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => ProfileScreen(clientData: client),
+                        )),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                    ],
+                  ),
+                  onTap: () => wp.loadPrograms(clientId: client['id']),
+                );
+              },
+            ),
     );
   }
 
