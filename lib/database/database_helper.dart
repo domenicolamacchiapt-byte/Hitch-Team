@@ -61,6 +61,39 @@ class DatabaseHelper {
     await _supabase.from('workout_days').delete().eq('id', id);
   }
 
+  Future<void> copyDayToWeek(WorkoutDay sourceDay, int targetWeekNumber) async {
+    // Create new day in target week
+    final now = DateTime.now();
+    final newDayId = '${now.millisecondsSinceEpoch ~/ 1000}-copy';
+    final newDay = WorkoutDay(
+      id: newDayId,
+      programId: sourceDay.programId,
+      name: sourceDay.name,
+      weekNumber: targetWeekNumber,
+      orderIndex: now.millisecondsSinceEpoch ~/ 1000,
+    );
+    await _supabase.from('workout_days').upsert(newDay.toMap());
+
+    // Copy all exercises
+    final exercises = await getExerciseTargetsForDay(sourceDay.id);
+    for (int i = 0; i < exercises.length; i++) {
+      final e = exercises[i];
+      final newExercise = ExerciseTarget(
+        id: '${now.millisecondsSinceEpoch ~/ 1000}-ex-$i',
+        workoutDayId: newDayId,
+        name: e.name,
+        targetSets: e.targetSets,
+        targetReps: e.targetReps,
+        targetWeight: e.targetWeight,
+        restSeconds: e.restSeconds,
+        notes: e.notes,
+        orderIndex: e.orderIndex,
+        isCompleted: false,
+      );
+      await _supabase.from('exercises').upsert(newExercise.toMap());
+    }
+  }
+
   // --- CRUD: ExerciseTargets ---
   Future<void> insertExerciseTarget(ExerciseTarget target) async {
     await _supabase.from('exercises').upsert(target.toMap());

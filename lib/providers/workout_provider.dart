@@ -103,6 +103,11 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> copyDayToWeek(WorkoutDay day, int targetWeekNumber) async {
+    await _db.copyDayToWeek(day, targetWeekNumber);
+    notifyListeners();
+  }
+
   Future<void> updateWorkoutDay(WorkoutDay day) async {
     await _db.updateWorkoutDay(day);
     notifyListeners();

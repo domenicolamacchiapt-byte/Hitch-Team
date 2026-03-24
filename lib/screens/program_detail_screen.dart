@@ -123,6 +123,8 @@ class _WeekViewState extends State<_WeekView> {
                           day: day,
                           isAdmin: widget.isAdmin,
                           onRefresh: () => setState(() { _loadDays(); }),
+                          program: widget.program,
+                          currentWeekNumber: widget.weekNumber,
                           onDelete: () async {
                             final confirm = await showDialog<bool>(
                               context: context,
@@ -164,6 +166,8 @@ class _WeekViewState extends State<_WeekView> {
                 day: day,
                 isAdmin: false,
                 onRefresh: () => setState(() { _loadDays(); }),
+                program: widget.program,
+                currentWeekNumber: widget.weekNumber,
               );
             },
           );
@@ -235,8 +239,17 @@ class _DayCard extends StatefulWidget {
   final bool isAdmin;
   final VoidCallback onRefresh;
   final VoidCallback? onDelete;
+  final Program? program;
+  final int currentWeekNumber;
 
-  const _DayCard({required this.day, required this.isAdmin, required this.onRefresh, this.onDelete});
+  const _DayCard({
+    required this.day,
+    required this.isAdmin,
+    required this.onRefresh,
+    this.onDelete,
+    this.program,
+    this.currentWeekNumber = 1,
+  });
 
   @override
   State<_DayCard> createState() => _DayCardState();
@@ -253,6 +266,38 @@ class _DayCardState extends State<_DayCard> {
 
   void _loadExercises() {
     _exercisesFuture = context.read<WorkoutProvider>().getExercisesForDay(widget.day.id);
+  }
+
+  void _showCopyDayDialog(BuildContext context) {
+    final program = widget.program;
+    if (program == null) return;
+    final weeks = List.generate(program.weeksCount, (i) => i + 1)
+        .where((w) => w != widget.currentWeekNumber)
+        .toList();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Copia in Settimana', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: weeks.map((w) => ListTile(
+            title: Text('Settimana $w', style: const TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: Color(0xFFFF9800), size: 16),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await context.read<WorkoutProvider>().copyDayToWeek(widget.day, w);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('"${widget.day.name}" copiato nella Settimana $w!'), backgroundColor: Colors.green),
+                );
+                widget.onRefresh();
+              }
+            },
+          )).toList(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -305,6 +350,17 @@ class _DayCardState extends State<_DayCard> {
                     tooltip: 'Elimina Giorno',
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
+                  ),
+                ],
+                if (widget.isAdmin && widget.program != null && widget.program!.weeksCount > 1) ...
+                [
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.copy_outlined, color: Colors.white54, size: 20),
+                    tooltip: 'Copia in altra settimana',
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                    onPressed: () => _showCopyDayDialog(context),
                   ),
                 ],
                 const SizedBox(width: 16),
