@@ -98,6 +98,27 @@ class _WeekViewState extends State<_WeekView> {
                   color: Colors.red,
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
+                confirmDismiss: (direction) async {
+                  return await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF1E1E1E),
+                      title: const Text('Elimina Giorno', style: TextStyle(color: Colors.white)),
+                      content: Text('Vuoi eliminare "${day.name}" e tutti i suoi esercizi?', style: const TextStyle(color: Colors.white70)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('ANNULLA', style: TextStyle(color: Colors.white54)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                          child: const Text('ELIMINA'),
+                        ),
+                      ],
+                    ),
+                  ) ?? false;
+                },
                 onDismissed: (direction) {
                   context.read<WorkoutProvider>().deleteWorkoutDay(day.id);
                   ScaffoldMessenger.of(context).showSnackBar(
