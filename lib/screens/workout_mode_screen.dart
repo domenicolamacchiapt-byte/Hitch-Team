@@ -135,10 +135,13 @@ class _ActiveExerciseView extends StatefulWidget {
   State<_ActiveExerciseView> createState() => _ActiveExerciseViewState();
 }
 
-class _ActiveExerciseViewState extends State<_ActiveExerciseView> {
+class _ActiveExerciseViewState extends State<_ActiveExerciseView>
+    with SingleTickerProviderStateMixin {
   List<SetLog> completedSets = [];
   late TextEditingController _repsController;
   late TextEditingController _weightController;
+  late AnimationController _glowCtrl;
+  late Animation<double> _glowAnim;
 
   @override
   void initState() {
@@ -146,6 +149,10 @@ class _ActiveExerciseViewState extends State<_ActiveExerciseView> {
     _repsController = TextEditingController(text: widget.target.targetReps.toString());
     _weightController = TextEditingController(text: widget.target.targetWeight.toString());
     _loadCompletedSets();
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 8.0, end: 22.0)
+        .animate(CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
   }
 
   Future<void> _loadCompletedSets() async {
@@ -197,6 +204,7 @@ class _ActiveExerciseViewState extends State<_ActiveExerciseView> {
   void dispose() {
     _repsController.dispose();
     _weightController.dispose();
+    _glowCtrl.dispose();
     super.dispose();
   }
 
@@ -235,7 +243,30 @@ class _ActiveExerciseViewState extends State<_ActiveExerciseView> {
           const SizedBox(height: 24),
           const Text('PROGRESSO TARGET', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('${completedSets.length} / ${widget.target.targetSets} SET COMPLETATI', style: const TextStyle(color: Color(0xFFFF9800), fontSize: 18, fontWeight: FontWeight.bold)),
+          // Glow animated set counter
+          AnimatedBuilder(
+            animation: _glowAnim,
+            builder: (context, child) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1100),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF9800).withOpacity(0.35),
+                    blurRadius: _glowAnim.value,
+                    spreadRadius: 1,
+                  )
+                ],
+                border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3)),
+              ),
+              child: Text(
+                '${completedSets.length} / ${widget.target.targetSets} SET COMPLETATI',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFFF9800), fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
           
           const SizedBox(height: 32),
           Row(
@@ -277,15 +308,24 @@ class _ActiveExerciseViewState extends State<_ActiveExerciseView> {
             ],
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFFFF9800).withOpacity(0.4), blurRadius: 18, offset: const Offset(0, 6)),
+              ],
             ),
-            onPressed: completedSets.length < widget.target.targetSets ? _logSet : null,
-            child: const Text('REGISTRA SET', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9800),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 22),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              onPressed: completedSets.length < widget.target.targetSets ? _logSet : null,
+              child: const Text('REGISTRA SET ✓', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            ),
           ),
           const SizedBox(height: 32),
           const Text('SERIE COMPLETATE OGGI', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),

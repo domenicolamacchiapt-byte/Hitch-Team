@@ -96,23 +96,26 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: programs.length,
             itemBuilder: (context, index) {
               final program = programs[index];
-              return Dismissible(
-                key: Key(program.id),
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20.0),
-                  color: Colors.red,
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                direction: auth.isAdmin ? DismissDirection.endToStart : DismissDirection.none,
-                onDismissed: (direction) {
-                  context.read<WorkoutProvider>().deleteProgram(program.id);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${program.name} eliminato')));
-                },
-                child: _ProgramCard(
-                  program: program,
-                  isAdmin: auth.isAdmin,
-                  onEdit: () => _showProgramFormDialog(context, program),
+              return _StaggerFade(
+                delay: Duration(milliseconds: index * 60),
+                child: Dismissible(
+                  key: Key(program.id),
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20.0),
+                    color: Colors.red,
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  direction: auth.isAdmin ? DismissDirection.endToStart : DismissDirection.none,
+                  onDismissed: (direction) {
+                    context.read<WorkoutProvider>().deleteProgram(program.id);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${program.name} eliminato')));
+                  },
+                  child: _ProgramCard(
+                    program: program,
+                    isAdmin: auth.isAdmin,
+                    onEdit: () => _showProgramFormDialog(context, program),
+                  ),
                 ),
               );
             },
@@ -277,53 +280,92 @@ class _ProgramCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final initial = program.name.isNotEmpty ? program.name[0].toUpperCase() : 'P';
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      clipBehavior: Clip.hardEdge,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProgramDetailScreen(program: program, isAdmin: isAdmin),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ProgramDetailScreen(program: program, isAdmin: isAdmin)),
+        ),
+        child: IntrinsicHeight(
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    program.name.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+              // Orange accent bar on left
+              Container(
+                width: 5,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFFFB74D), Color(0xFFFF9800)],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Iniziato il: ${DateFormat('dd MMM yyyy').format(program.startDate)} (${program.weeksCount} sett.)',
-                    style: const TextStyle(color: Colors.white54),
-                  ),
-                ],
+                ),
               ),
-              Row(
-                children: [
-                  if (isAdmin) IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white54, size: 24),
-                    onPressed: onEdit,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    children: [
+                      // Avatar with initial
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFFFF9800).withOpacity(0.15),
+                        radius: 24,
+                        child: Text(initial, style: const TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.bold, fontSize: 20)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              program.name.toUpperCase(),
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF9800).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.4), width: 0.8),
+                                  ),
+                                  child: Text('${program.weeksCount} SETT.', style: const TextStyle(color: Color(0xFFFF9800), fontSize: 11, fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  DateFormat('dd MMM yyyy').format(program.startDate),
+                                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          if (isAdmin) IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.white38, size: 20),
+                            onPressed: onEdit,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          if (isAdmin) const SizedBox(width: 10),
+                          const Icon(Icons.arrow_forward_ios, color: Color(0xFFFF9800), size: 16),
+                        ],
+                      ),
+                    ],
                   ),
-                  if (isAdmin) const SizedBox(width: 16),
-                  const Icon(Icons.arrow_forward_ios, color: Color(0xFFFF9800)),
-                ],
+                ),
               ),
             ],
           ),
@@ -331,4 +373,38 @@ class _ProgramCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// Staggered fade-slide animation wrapper
+class _StaggerFade extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+  const _StaggerFade({required this.child, required this.delay});
+  @override
+  State<_StaggerFade> createState() => _StaggerFadeState();
+}
+
+class _StaggerFadeState extends State<_StaggerFade> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    Future.delayed(widget.delay, () { if (mounted) _ctrl.forward(); });
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _fade,
+    child: SlideTransition(position: _slide, child: widget.child),
+  );
 }

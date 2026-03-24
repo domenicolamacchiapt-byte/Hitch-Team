@@ -143,10 +143,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Hero avatar
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFB74D), Color(0xFFE65100)],
+                    ),
+                    boxShadow: [BoxShadow(color: const Color(0xFFFF9800).withOpacity(0.5), blurRadius: 20, spreadRadius: 2)],
+                  ),
+                  child: Center(
+                    child: Builder(builder: (context) {
+                      final fn = _firstNameCtrl.text.isNotEmpty ? _firstNameCtrl.text[0].toUpperCase() : '';
+                      final ln = _lastNameCtrl.text.isNotEmpty ? _lastNameCtrl.text[0].toUpperCase() : '';
+                      final initials = '$fn$ln'.trim();
+                      return initials.isNotEmpty
+                          ? Text(initials, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold))
+                          : const Icon(Icons.person, color: Colors.white, size: 40);
+                    }),
+                  ),
+                ),
+              ),
+            ),
             _section('Anagrafica'),
             _buildTextField(_firstNameCtrl, 'Nome', canEdit),
             const SizedBox(height: 16),
