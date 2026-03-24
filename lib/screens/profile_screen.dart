@@ -16,6 +16,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
   final _goalCtrl = TextEditingController();
   final _injuriesCtrl = TextEditingController();
   final _anamnesisCtrl = TextEditingController();
@@ -51,6 +53,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await auth.refreshProfile();
       final p = auth.profile;
       if (p != null) {
+        _firstNameCtrl.text = p.firstName;
+        _lastNameCtrl.text = p.lastName;
         _goalCtrl.text = p.goal ?? '';
         _injuriesCtrl.text = p.pastInjuries ?? '';
         _anamnesisCtrl.text = p.anamnesisResults ?? '';
@@ -64,6 +68,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _populateFromMap(Map<String, dynamic> data) {
+    _firstNameCtrl.text = data['first_name'] ?? '';
+    _lastNameCtrl.text = data['last_name'] ?? '';
     _goalCtrl.text = data['goal'] ?? '';
     _injuriesCtrl.text = data['past_injuries'] ?? '';
     _anamnesisCtrl.text = data['anamnesis_results'] ?? '';
@@ -78,6 +84,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isSaving = true);
     final auth = context.read<AuthProvider>();
     final data = {
+      'first_name': _firstNameCtrl.text.trim().isEmpty ? null : _firstNameCtrl.text.trim(),
+      'last_name': _lastNameCtrl.text.trim().isEmpty ? null : _lastNameCtrl.text.trim(),
       'goal': _goalCtrl.text.trim().isEmpty ? null : _goalCtrl.text.trim(),
       'past_injuries': _injuriesCtrl.text.trim().isEmpty ? null : _injuriesCtrl.text.trim(),
       'anamnesis_results': _anamnesisCtrl.text.trim().isEmpty ? null : _anamnesisCtrl.text.trim(),
@@ -139,6 +147,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _section('Anagrafica'),
+            _buildTextField(_firstNameCtrl, 'Nome', canEdit),
+            const SizedBox(height: 16),
+            _buildTextField(_lastNameCtrl, 'Cognome', canEdit),
+            const SizedBox(height: 24),
             _section('Dati Fisici'),
             _buildDropdown('Sesso', _gender, ['Maschio', 'Femmina', 'Non definito'], canEdit, (v) => setState(() => _gender = v)),
             const SizedBox(height: 16),
@@ -203,6 +216,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildNumber(TextEditingController ctrl, String label, bool enabled) => TextField(
     controller: ctrl, enabled: enabled, keyboardType: TextInputType.number,
+    decoration: _dec(label),
+  );
+
+  Widget _buildTextField(TextEditingController ctrl, String label, bool enabled) => TextField(
+    controller: ctrl, enabled: enabled,
     decoration: _dec(label),
   );
 
