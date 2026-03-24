@@ -168,4 +168,15 @@ class AuthProvider with ChangeNotifier {
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }
+
+  Future<String?> changePassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
+  }
 }

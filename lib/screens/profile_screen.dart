@@ -172,6 +172,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 24),
                 child: Center(child: Text('Il profilo è gestito dal Coach', style: TextStyle(color: Colors.white38, fontSize: 13))),
               ),
+            // Change password — only for own profile, not client view
+            if (widget.clientData == null) ...
+            [
+              const SizedBox(height: 32),
+              _section('Sicurezza Account'),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.lock_outline, color: Color(0xFFFF9800)),
+                  label: const Text('Cambia Password', style: TextStyle(color: Color(0xFFFF9800))),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFFF9800)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => _showChangePasswordDialog(context),
+                ),
+              ),
+            ],
             const SizedBox(height: 40),
           ],
         ),
@@ -218,6 +237,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
     controller: ctrl, enabled: enabled, keyboardType: TextInputType.number,
     decoration: _dec(label),
   );
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text('Cambia Password', style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: newPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Nuova Password',
+                  filled: true, fillColor: const Color(0xFF161616),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmPassCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Conferma Password',
+                  filled: true, fillColor: const Color(0xFF161616),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ANNULLA', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9800), foregroundColor: Colors.black),
+              onPressed: isSubmitting ? null : () async {
+                if (newPassCtrl.text.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('La password deve avere almeno 6 caratteri'), backgroundColor: Colors.redAccent)
+                  );
+                  return;
+                }
+                if (newPassCtrl.text != confirmPassCtrl.text) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Le password non coincidono'), backgroundColor: Colors.redAccent)
+                  );
+                  return;
+                }
+                setDialogState(() => isSubmitting = true);
+                final err = await context.read<AuthProvider>().changePassword(newPassCtrl.text);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(err ?? 'Password aggiornata con successo!'),
+                    backgroundColor: err != null ? Colors.redAccent : Colors.green,
+                  ));
+                }
+              },
+              child: isSubmitting
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                  : const Text('SALVA'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildTextField(TextEditingController ctrl, String label, bool enabled) => TextField(
     controller: ctrl, enabled: enabled,
