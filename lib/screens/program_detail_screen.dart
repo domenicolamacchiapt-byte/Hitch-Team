@@ -84,51 +84,86 @@ class _WeekViewState extends State<_WeekView> {
             );
           }
 
+          if (widget.isAdmin) {
+            return ReorderableListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: days.length,
+              onReorder: (oldIndex, newIndex) async {
+                if (newIndex > oldIndex) newIndex--;
+                final reordered = List<WorkoutDay>.from(days);
+                final moved = reordered.removeAt(oldIndex);
+                reordered.insert(newIndex, moved);
+                // Persist new order_index for each day
+                final db = context.read<WorkoutProvider>();
+                for (int i = 0; i < reordered.length; i++) {
+                  final updated = WorkoutDay(
+                    id: reordered[i].id,
+                    programId: reordered[i].programId,
+                    name: reordered[i].name,
+                    weekNumber: reordered[i].weekNumber,
+                    orderIndex: i,
+                  );
+                  await db.updateWorkoutDay(updated);
+                }
+                setState(() => _loadDays());
+              },
+              itemBuilder: (context, index) {
+                final day = days[index];
+                return Material(
+                  key: Key(day.id),
+                  color: Colors.transparent,
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(Icons.drag_handle, color: Colors.white38),
+                      ),
+                      Expanded(
+                        child: _DayCard(
+                          day: day,
+                          isAdmin: widget.isAdmin,
+                          onRefresh: () => setState(() { _loadDays(); }),
+                          onDelete: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                title: const Text('Elimina Giorno', style: TextStyle(color: Colors.white)),
+                                content: Text('Vuoi eliminare "${day.name}" e tutti i suoi esercizi?', style: const TextStyle(color: Colors.white70)),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA', style: TextStyle(color: Colors.white54))),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                    child: const Text('ELIMINA'),
+                                  ),
+                                ],
+                              ),
+                            ) ?? false;
+                            if (confirm && context.mounted) {
+                              await context.read<WorkoutProvider>().deleteWorkoutDay(day.id);
+                              setState(() => _loadDays());
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          }
+
+          // Guest: plain non-reorderable list
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: days.length,
             itemBuilder: (context, index) {
               final day = days[index];
-              return Dismissible(
-                key: Key(day.id),
-                direction: widget.isAdmin ? DismissDirection.endToStart : DismissDirection.none,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20.0),
-                  color: Colors.red,
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                confirmDismiss: (direction) async {
-                  return await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      title: const Text('Elimina Giorno', style: TextStyle(color: Colors.white)),
-                      content: Text('Vuoi eliminare "${day.name}" e tutti i suoi esercizi?', style: const TextStyle(color: Colors.white70)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('ANNULLA', style: TextStyle(color: Colors.white54)),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                          child: const Text('ELIMINA'),
-                        ),
-                      ],
-                    ),
-                  ) ?? false;
-                },
-                onDismissed: (direction) {
-                  context.read<WorkoutProvider>().deleteWorkoutDay(day.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${day.name} eliminato')));
-                },
-                child: _DayCard(
-                  day: day,
-                  isAdmin: widget.isAdmin,
-                  onRefresh: () => setState(() { _loadDays(); }),
-                ),
+              return _DayCard(
+                day: day,
+                isAdmin: false,
+                onRefresh: () => setState(() { _loadDays(); }),
               );
             },
           );
@@ -199,8 +234,9 @@ class _DayCard extends StatefulWidget {
   final WorkoutDay day;
   final bool isAdmin;
   final VoidCallback onRefresh;
+  final VoidCallback? onDelete;
 
-  const _DayCard({required this.day, required this.isAdmin, required this.onRefresh});
+  const _DayCard({required this.day, required this.isAdmin, required this.onRefresh, this.onDelete});
 
   @override
   State<_DayCard> createState() => _DayCardState();
@@ -260,6 +296,17 @@ class _DayCardState extends State<_DayCard> {
                   constraints: const BoxConstraints(),
                   padding: EdgeInsets.zero,
                 ),
+                if (widget.onDelete != null) ...
+                [
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                    onPressed: widget.onDelete,
+                    tooltip: 'Elimina Giorno',
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.play_circle_fill, color: Color(0xFFFF9800), size: 32),
