@@ -131,6 +131,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('PANNELLO COACH'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: Color(0xFFFF9800)),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            tooltip: 'Profilo',
+          ),
           IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: () => wp.loadClients(force: true)),
           IconButton(icon: const Icon(Icons.power_settings_new, color: Colors.redAccent), onPressed: () => context.read<AuthProvider>().signOut()),
         ],
